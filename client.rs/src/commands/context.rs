@@ -64,13 +64,21 @@ impl TryFrom<&ArgMatches> for TokenCommandContext {
             .parse()
             .map_err(|e| anyhow::anyhow!("Failed to parse `output`: {:?}", e))?;
 
+        let chain_id = matches
+            .get_one::<String>("chain-id")
+            .map(|s| {
+                s.parse::<u64>()
+                    .map_err(|e| anyhow::anyhow!("`chain-id`: {e}"))
+            })
+            .transpose()?;
+
         let token: Box<dyn TokenContract> = match network {
             HapiCoreNetwork::Sepolia | HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc => {
                 Box::new(TokenContractEvm::new(HapiCoreOptions {
                     provider_url,
                     contract_address,
                     private_key,
-                    chain_id: None,
+                    chain_id,
                 })?)
             }
             HapiCoreNetwork::Solana => Box::new(TokenContractSolana::new()?),
